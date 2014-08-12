@@ -29,3 +29,20 @@ duplicates _ [] = []
 duplicates list1 (x:xs) = if (isInList1 x) then x : (duplicates list1 xs) else (duplicates list1 xs)
 	where isInList1 x = contains list1 x
 
+path_file :: String -> String
+path_file x = path_file_iter x []
+
+path_file_iter :: String -> String -> String
+path_file_iter [] buffer = buffer
+path_file_iter ('/':xs) buffer = path_file_iter xs []
+path_file_iter (x:xs) buffer = path_file_iter xs (buffer ++ [x])
+
+path_dir :: String -> String
+path_dir x = path_dir_iter x []
+
+path_dir_iter :: String -> String -> String
+path_dir_iter [] buffer = []
+path_dir_iter ('/':xs) buffer = buffer ++ "/" ++ path_file_iter xs []
+path_dir_iter (x:xs) buffer = path_dir_iter xs (buffer ++ [x])
+
+
