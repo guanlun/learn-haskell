@@ -1,22 +1,27 @@
 
 data Operator = PLUS | MINUS | MULTIPLY | DIVIDE
-    deriving Show
+
+instance Show Operator where
+    show PLUS = "+"
+    show MINUS = "+"
+    show MULTIPLY = "+"
+    show DIVIDE = "+"
 
 data Node = 
-    Node {
+    OperatorNode {
         operator :: Operator,
-        leftChild :: Maybe Node,
-        rightChild :: Maybe Node
-    } deriving Show
+        leftChild :: Node, 
+        rightChild :: Node
+    }
+    | IntNode {
+        value :: Int
+    }
 
-getOperator :: Node -> Operator
-getOperator (Node o _ _) = o
+instance Show Node where
+    show (OperatorNode o l r) = "( " ++ show o ++ " " ++ 
+        show l ++ " " ++ show r ++ " )"
 
-getLeftChild :: Node -> Maybe Node
-getLeftChild (Node _ l _) = l
-
-getRightChild :: Node -> Maybe Node
-getRightChild (Node _ l _) = l
+    show (IntNode v) = show v
 
 main = do
     f <- readFile "input.scm"
