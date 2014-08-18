@@ -45,4 +45,16 @@ path_dir_iter [] buffer = []
 path_dir_iter ('/':xs) buffer = buffer ++ "/" ++ path_file_iter xs []
 path_dir_iter (x:xs) buffer = path_dir_iter xs (buffer ++ [x])
 
+-- Split `str` using a list of Chars `dils`
+split :: [Char] -> String -> [String]
+split dils str = go str "" [] where
+    go a b c
+        | trace (printf "a = %s, b = %s, c = %s" a b (show c)) False = undefined
+    go [] buffer results = results ++ [buffer]
+    go (x:xs) buffer results
+        | x `elem` dils = go xs [] (results ++ [buffer])
+        | otherwise = go xs (buffer ++ [x]) results
+
+splitBySpace :: String -> [String]
+splitBySpace = split " "
 
