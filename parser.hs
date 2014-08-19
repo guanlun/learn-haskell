@@ -6,30 +6,40 @@ import Text.Regex.Posix
 
 data Token = 
     Number Double
-    | L_BRKT 
-    | R_BRKT 
-    | PLUS
-    | MINUS
-    | MULTIPLY
-    | DIVIDE
-    | INVALID_TOKEN 
+    | Name String
+    | LBrkt_t
+    | RBrkt_t
+    | Plus_t
+    | Minus_t
+    | Multiply_t
+    | Divide_t
+    | InvalidToken_t
     deriving Eq
 
 instance Show Token where
-    show L_BRKT = "("
-    show R_BRKT = ")"
-    show PLUS = "+"
-    show MINUS = "-"
-    show MULTIPLY = "*"
-    show DIVIDE = "/"
-    show INVALID_TOKEN = "__INVALID_TOKEN__"
+    show LBrkt_t = "("
+    show RBrkt_t = ")"
+    show Plus_t = "+"
+    show Minus_t = "-"
+    show Multiply_t = "*"
+    show Divide_t = "/"
+    show InvalidToken_t = "__INVALID_TOKEN__"
     show (Number num) = show num
+
+data Operator = 
+    Plus_o
+    | Minus_o
+    | Multiply_o
+    | Divide_o
+    deriving Show
 
 data Expression =
     ListExpr [Expression]
     | DoubleExpr Double
+    | OperatorExpr Operator
     deriving Show
 
+{-
 getOprt :: (Floating a) => Token -> (a -> a -> a)
 getOprt PLUS = (+)
 getOprt MINUS = (-)
@@ -55,8 +65,8 @@ eval :: Node -> Double
 eval (ValueNode i) = i
 eval (OperatorNode oprt car cdr) = foldl op (eval car) (map eval cdr)
     where op = getOprt oprt
+-}
 
--- 
 splitAtNext :: [Char] -> String -> (String, String, String)
 splitAtNext dils str = go str "" where
     go [] buffer = (buffer, "", "")
@@ -71,9 +81,12 @@ splitAtNextDil :: String -> (String, String, String)
 splitAtNextDil = splitAtNext $ nullDils ++ tokenDils
 
 matchToken :: String -> Maybe Token
-matchToken "+" = Just PLUS
-matchToken "(" = Just L_BRKT
-matchToken ")" = Just R_BRKT
+matchToken "+" = Just Plus_t
+matchToken "-" = Just Minus_t
+matchToken "*" = Just Multiply_t
+matchToken "/" = Just Divide_t
+matchToken "(" = Just LBrkt_t
+matchToken ")" = Just RBrkt_t
 matchToken t
     | (numValue /= "") = Just (Number $ (read numValue :: Double))
     | otherwise = Nothing where
@@ -85,7 +98,7 @@ _tokenize s = map matchToken [pre, delim] ++ _tokenize post where
     (pre, delim, post) = splitAtNextDil s
 
 tokenize :: String -> [Token]
-tokenize = map (maybe INVALID_TOKEN id) . filter isJust . _tokenize
+tokenize = map (maybe InvalidToken_t id) . filter isJust . _tokenize
 
 untilNext :: (Eq a) => a -> [a] -> [a]
 untilNext dil l = go l [] where
@@ -94,53 +107,39 @@ untilNext dil l = go l [] where
         | x == dil = buffer
         | otherwise = go xs (buffer ++ [x])
 
-untilNextRBrkt :: [Token] -> [Token]
-untilNextRBrkt = untilNext R_BRKT
-
-{-
-parseOprt :: [Token] -> Node
-parseOprt (x:y:xs) =
-    OperatorNode
-
-parseExpr :: [Token] -> Node
-parseExpr (x:xs) = 
-    case x of
-        (Number n) -> ValueNode n
-        L_BRKT -> OperatorNode 
-        R_BRKT -> 
-parseExpr _ = ValueNode 0
-
-parseMany :: [Token] -> [Node]
--}
-
--- parseBrktPair :: [Token] -> Node
-
--- (op expr expr expr expr)
--- (+ 1 (+ 2 3))
--- (if (1 < 2) 3 4)
--- (define x (lambda (y) (+ y 1)))
--- if-node 
---  car: (1 < 2)
-
--- parse :: [Token] -> Node
--- parse = parseBrktPair
---
+untilNextRBrkt_t :: [Token] -> [Token]
+untilNextRBrkt_t = untilNext RBrkt_t
 
 parseExpr :: [Token] -> (Expression, [Token])
 parseExpr (expr : post) =
     case expr of
+        Plus_t -> (OperatorExpr Plus_o, post)
+        Minus_t -> (OperatorExpr Minus_o, post)
         Number n -> (DoubleExpr n, post)
-        L_BRKT -> (ListExpr exprList, remainToks) where
+        LBrkt_t -> (ListExpr exprList, remainToks) where
             (exprList, remainToks) = parseExprList post
 
 parseExprList :: [Token] -> ([Expression], [Token])
 parseExprList toks = go [] toks where
-    go results (R_BRKT : remainToks) = (results, remainToks)
+    go results (RBrkt_t : remainToks) = (results, remainToks)
     go results remainToks = 
         go (results ++ [retExpr]) retRemainToks where
             (retExpr, retRemainToks) = parseExpr remainToks
 
+evalList :: [Expression] -> Double
+evalList (op : car : cdr) = 
+    case op of
+        OperatorExpr Plus_o -> foldl (+) (eval car) (map eval cdr)
+        OperatorExpr Minus_o -> foldl (-) (eval car) (map eval cdr)
+
+eval :: Expression -> Double
+eval expr = 
+    case expr of
+        (DoubleExpr num) -> num
+        (ListExpr l) -> evalList l
+        otherwise -> 0
+
 main = do
     f <- readFile "input.scm"
-    putStrLn $ show $ fst $ parseExpr $ tokenize f
+    (putStrLn . show . eval . fst . parseExpr . tokenize) f
 
