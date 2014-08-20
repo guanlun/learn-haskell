@@ -13,9 +13,13 @@ instance Show Token where
 
 data Value = 
     DoubleValue Double
+    | ListValue [Value]
     | PLUS
     | MINUS
     | IF
+    | CONS
+    | CAR
+    | CDR
     deriving Show
 
 plus :: Value -> Value -> Value
@@ -50,7 +54,7 @@ matchToken t
     | (numValue /= "") = Just (NumberToken $ (read numValue :: Double))
     | otherwise = Nothing where
         numValue = (t =~ "^[-+]?[0-9]+\\.?[0-9]*$" :: String)
-        opertors = ["(", ")", "+", "-", "if"]
+        opertors = ["(", ")", "+", "-", "if", "cons", "car", "cdr"]
 
 -- convert a expression string into a list of tokens
 tokenize :: String -> [Token]
@@ -71,11 +75,14 @@ parseExprList toks = go [] toks where
 parseExpr :: [Token] -> (Expression, [Token])
 parseExpr (expr : post) =
     case expr of
-        (NumberToken n) -> (ValueExpr (DoubleValue n), post)
-        (NameToken "+") -> (ValueExpr PLUS, post)
-        (NameToken "-") -> (ValueExpr MINUS, post)
-        (NameToken "if") -> (ValueExpr IF, post)
-        (NameToken "(") -> (ListExpr exprList, remainToks) where
+        NumberToken n -> (ValueExpr (DoubleValue n), post)
+        NameToken "+" -> (ValueExpr PLUS, post)
+        NameToken "-" -> (ValueExpr MINUS, post)
+        NameToken "if" -> (ValueExpr IF, post)
+        NameToken "cons" -> (ValueExpr CONS, post)
+        NameToken "car" -> (ValueExpr CAR, post)
+        NameToken "cdr" -> (ValueExpr CDR, post)
+        NameToken "(" -> (ListExpr exprList, remainToks) where
             (exprList, remainToks) = parseExprList post
 
 -- evaluate a list of expressions by calling eval to each sub-expression
@@ -84,8 +91,8 @@ evalList (op : car : cdr) =
     case (eval op) of
         PLUS -> foldl plus (eval car) (map eval cdr)
         MINUS -> foldl minus (eval car) (map eval cdr)
-        IF -> 
-            if (eval car) /= (DoubleValue 0) 
+        CONS -> ListValue [(eval car), (eval $ head cdr)]
+        IF -> if (eval car) /= (DoubleValue 0) 
                 then eval $ head cdr 
                 else eval $ head $ tail cdr
 
@@ -98,5 +105,6 @@ eval expr =
 
 main = do
     f <- readFile "input.scm"
+    (putStrLn . show . tokenize) f
     (putStrLn . show . eval . fst . parseExpr . tokenize) f
 
