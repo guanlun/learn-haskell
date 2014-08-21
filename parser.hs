@@ -92,9 +92,13 @@ evalList (op : car : cdr) =
         PLUS -> foldl plus (eval car) (map eval cdr)
         MINUS -> foldl minus (eval car) (map eval cdr)
         CONS -> ListValue [(eval car), (eval $ head cdr)]
+        CAR -> case car of
+            ListExpr (op : args) -> (eval $ head args)
+        CDR -> case car of
+            ListExpr (op : args) -> eval $ head $ tail args
         IF -> if (eval car) /= (DoubleValue 0) 
-                then eval $ head cdr 
-                else eval $ head $ tail cdr
+            then eval $ head cdr 
+            else eval $ head $ tail cdr
 
 -- eval an expression, returning a type Value
 eval :: Expression -> Value
