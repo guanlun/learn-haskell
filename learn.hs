@@ -1,3 +1,5 @@
+import Data.Char
+
 data Vec3 = Vec3 {
     x :: Float,
     y :: Float,
@@ -9,6 +11,12 @@ add v1 v2 = Vec3 ((x v1) + (x v2)) ((y v1) + (y v2)) ((z v1) + (z v2))
 
 minus :: Vec3 -> Vec3 -> Vec3
 minus v1 v2 = Vec3 ((x v1) - (x v2)) ((y v1) - (y v2)) ((z v1) - (z v2))
+
+data Color = Color {
+    r :: Int,
+    g :: Int,
+    b :: Int
+} deriving (Show)
 
 data Shape =
     Sphere {
@@ -38,8 +46,22 @@ viewPlaneCoords = [Vec3 x y 0 | x <- [1 .. 100], y <- [1 .. 80]]
 coordToRay :: Vec3 -> Vec3 -> Ray
 coordToRay startPos coord = Ray startPos (coord `minus` startPos)
 
-rayToColor :: Ray -> Int
-rayToColor _ = 0
+rayToColor :: Ray -> Color
+rayToColor _ = Color 255 127 0
+
+ppmHeader :: Int -> Int -> String
+ppmHeader width height =
+    "P6\n" ++ (show width) ++ " " ++ (show height) ++ "\n255\n"
+
+pixelToData :: Color -> String
+pixelToData (Color r g b) = [(chr r), (chr g), (chr b)]
+
+imageToData :: [Color] -> String
+imageToData pixels = foldl (++) "" (map pixelToData pixels)
+
+writeImage :: Int -> Int -> [Color] -> IO ()
+writeImage width height imageData = do
+    writeFile "output/result.ppm" ((ppmHeader width height) ++ imageToData imageData)
 
 main = do
-    putStrLn $ show (map (coordToRay (position camera)) viewPlaneCoords)
+    writeImage 100 80 (map (rayToColor . coordToRay (position camera)) viewPlaneCoords)
