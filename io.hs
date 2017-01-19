@@ -57,4 +57,3 @@ split dils str = go str "" [] where
 
 splitBySpace :: String -> [String]
 splitBySpace = split " "
-
